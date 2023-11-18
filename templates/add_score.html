@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>add a score for player</title>
+</head>
+<body>
+    <h1>Add new score</h1>
+    <select name="player">
+    <!-- populate with names from players table, id as hidden field, when submit send id through-->
+        <option value="mike">Mike</option>
+        <option value="dave">Dave</option>
+        <option value="lauren">Lauren</option>
+        <!-- option to add player -->
+    </select>
+    <select name="course">
+        <!-- populate with names from players table, id as hidden field, when submit send id throug-->
+            <option value="Richter">Richter</option>
+        <!-- option to add course -->
+    </select>
+    <hr><br>
+    <form action = "/input_scores" method = "post" enctype="multipart/form-data">
+        <label>hole 1:</label> <input type="number" name="1" required><br>
+        <label>hole 2:</label> <input type="number" name="2" required><br>
+        <label>hole 3:</label> <input type="number" name="3" required><br>
+        <label>hole 4:</label> <input type="number" name="4" required><br>
+        <label>hole 5:</label> <input type="number" name="5" required><br>
+        <label>hole 6:</label> <input type="number" name="6" required><br>
+        <label>hole 7:</label> <input type="number" name="7" required><br>
+        <label>hole 8:</label> <input type="number" name="8" required><br>
+        <label>hole 9:</label> <input type="number" name="9" required><br>
+        <label>hole 10:</label> <input type="number" name="10" value="0"><br>
+        <label>hole 11:</label> <input type="number" name="11" value="0"><br>
+        <label>hole 12:</label> <input type="number" name="12" value="0"><br>
+        <label>hole 13:</label> <input type="number" name="13" value="0"><br>
+        <label>hole 14:</label> <input type="number" name="14" value="0"><br>
+        <label>hole 15:</label> <input type="number" name="15" value="0"><br>
+        <label>hole 16:</label> <input type="number" name="16" value="0"><br>
+        <label>hole 17:</label> <input type="number" name="17" value="0"><br>
+        <label>hole 18:</label> <input type="number" name="18" value="0"><br>
+        <input type = "submit" value="Create">
+    </form>
+
+</body>
+</html>
