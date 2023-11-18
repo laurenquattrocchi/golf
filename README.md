@@ -1,4 +1,4 @@
-Golf outing
+Golf outing - In Progress
 
 add players to outing <br>
 
