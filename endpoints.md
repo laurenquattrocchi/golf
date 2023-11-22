@@ -1,5 +1,5 @@
 | HTTP Method	|	Endpoint	        |	Description
-| -------         -------                 -------
+| -------     |   -------         |       -------
 | GET	        |	/players	        |	returns all players
 | POST	      |	/players	        |	adds new players
 | GET	        |	/players/id	      |	returns player information: name, handicapp
