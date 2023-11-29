@@ -84,13 +84,34 @@ class DB:
         self.conn.commit()
         # c.execute(insert_query, value_base)
         
+    def new_outing(self, form):
+        # insert into table
+        # return true if insert is success
+        print(form)
+        return None
 
+    def all_outings(self):
+        # return all players regardless of outing
+        c = self.conn.cursor()
+        c.execute('select * from outing;')
+        return c.fetchall()
+    
+    def all_courses(self):
+        # return all players regardless of outing
+        c = self.conn.cursor()
+        c.execute('select * from course;')
+        return c.fetchall()
 
+    def all_games(self):
+        # return all players regardless of outing
+        c = self.conn.cursor()
+        c.execute('select * from game_type;')
+        return c.fetchall()    
     
     def all_players(self):
         # return all players regardless of outing
         c = self.conn.cursor()
-        c.execute('select * from players;')
+        c.execute('select * from player;')
         return c.fetchall()
     
     def player_details(self,id):

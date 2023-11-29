@@ -1,8 +1,41 @@
 <!-- <!doctype html> -->
+<!-- remove hardcode of url??? -->
 {% extends "base.html" %}
 
-<div>
-    <h1>test</h1>
-</div>
+{% block head %}
+  <!-- brings in everything from base -->
+    {{ super() }}
+
+{% endblock %}
+
+{% block content %}
+    <div>
+        <button id="newButton"> create an outing </button>
+        <button id="existingButton"> open existing outing</button>
+    </div>
+    <script type="text/javascript">
+        // document.getElementById("newButton").onclick = function () {
+        //     document.body.innerHTML = 
+        //         '<form action = "/add_outing" method = "post" enctype="multipart/form-data">' +
+        //         '<label>name:</label> <input type="text" name="fname" required><br>' +
+        //         '<label>location:</label> <input type="text" name="lname" required><br>' +
+        //         '<label>dates:</label> <input type="number" name="handicapp" required><br>' +
+        //         '<label>players:</label> <input type="number" name="handicapp" required><br>' +
+        //         '<label>course:</label> <input type="number" name="handicapp" required><br>' +
+        //         '<label>games:</label> <input type="number" name="handicapp" required><br>' +
+        //         '<input type = "submit" value="Create">' +
+        //         '</form>';
+        // };
+        document.getElementById("existingButton").onclick = function () {
+            location.href = "http://127.0.0.1:5000/outings";
+        };
+        document.getElementById("newButton").onclick = function () {
+            location.href = "http://127.0.0.1:5000/outings/new";
+        };
+    </script>
+
+{% endblock %}
    
 
+<!-- resources:
+https://www.shecodes.io/athena/46753-how-to-replace-html-content-when-a-button-is-clicked-in-javascript -->
