@@ -90,25 +90,32 @@ class DB:
         print(form)
         return None
 
-    def all_outings(self):
+    def get_outings(self, id = None):
         # return all players regardless of outing
         c = self.conn.cursor()
-        c.execute('select * from outing;')
+        if id == None:
+            c.execute('select * from outing;')
+        else:
+            # paramaterize
+            c.execute('select * from outing where id = id;')
         return c.fetchall()
     
-    def all_courses(self):
+    def update_outing(self):
+        pass
+    
+    def get_courses(self):
         # return all players regardless of outing
         c = self.conn.cursor()
         c.execute('select * from course;')
         return c.fetchall()
 
-    def all_games(self):
+    def get_games(self):
         # return all players regardless of outing
         c = self.conn.cursor()
         c.execute('select * from game_type;')
         return c.fetchall()    
     
-    def all_players(self):
+    def get_players(self):
         # return all players regardless of outing
         c = self.conn.cursor()
         c.execute('select * from player;')

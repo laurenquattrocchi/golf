@@ -23,41 +23,53 @@ def test():
     # return render_template("add_score.html")
     return render_template("test_child.html")
 
-@app.route('/add_player', methods=["POST"])
-def add_player():
+@app.route('/players', methods=["GET", "POST"])
+def players():
     '''
+    Returns all players in the database
     Inserts a player in the database and its dependencies 
     (ex: player/outing table)
     '''
-    # fname = request.form['fname']
-    # lname = request.form['lname']
-    # handi = request.form['handicapp']
-    print(request.form)
-    db = DB(db_conn)
-    db.new_player(request.form)
-
-    return render_template("base.html")
-
-@app.route('/get_players', methods=["GET"])
-def get_players():
-    '''
-    Returns all players in the database
-    '''
-    # fname = request.form['fname']
-    # lname = request.form['lname']
-    # handi = request.form['handicapp']
     print(request.form)
     db = DB(db_conn)
     players = db.all_player()
+    print(request.form)
+    db = DB(db_conn)
+    db.new_player(request.form)
     # fname = players[0][1]
     fname = players
-
     return render_template("base.html", players=fname)
 
-@app.route('/add_outing', methods=["POST"])
-def add_outing():
+@app.route('/players/id', methods=["GET", "PATCH", "DELETE"])
+def player():
+    '''player information: name, handicapp'''
+    pass
+    # extract id from url - update this
+
+@app.route('/players/id/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
+def round():
     '''
-    Inserts a player in the database and its dependencies 
+    round details (score per hole) for player
+        add scores for a new round
+
+    '''
+    # extract id from url - update this, does id need to come after rounds?
+    db = DB(db_conn)
+    db.new_scores(2,1, request.form)
+    fname='test'
+    return render_template("base.html", players=fname)
+
+@app.route('/players/id/scores', methods=["GET"])
+def scores():
+    '''
+    returns player name, total ryder cups points and $ per outing
+    '''
+    # extract id from url - update this, does id need to come after scores?
+
+@app.route('/outings', methods=["GET", "POST"])
+def outings():
+    '''
+    Inserts a outing in the database and its dependencies 
     (ex: player/outing table)
     '''
     print(request.form)
@@ -71,16 +83,21 @@ def add_outing():
         pass
         # render name of outing created succesfully 
 
-    return render_template("base.html")
+    '''
+    Returns all outings in the database
+    '''
+    print(request)
+    db = DB(db_conn)
+    outings = db.all_outings()
+    return render_template("outings.html", outings=outings)
 
 @app.route('/outings/new', methods=["GET", "POST"])
 def new_outings():
     '''
     should this be in same endpoint as outings somehow?
+    builds form for new outing to be created and then sent
+    to /outings
     '''
-    # fname = request.form['fname']
-    # lname = request.form['lname']
-    # handi = request.form['handicapp']
     print(request)
     db = DB(db_conn)
     outings = db.all_outings()
@@ -102,29 +119,49 @@ def new_outings():
 
         return render_template("outings.html", players=players, courses = courses,games=games)
 
-@app.route('/outings', methods=["GET"])
-def outings():
-    '''
-    Returns all outings in the database
-    '''
-    # fname = request.form['fname']
-    # lname = request.form['lname']
-    # handi = request.form['handicapp']
-    print(request)
-    db = DB(db_conn)
-    outings = db.all_outings()
-    return render_template("outings.html", outings=outings)
+@app.route('/outings/id', methods=["GET", "PATCH", "DELETE"])
+def outing():
+    '''updates/deletes/returns outing info:players, courses'''
+    # extract id from url
+    pass
 
-# @app.route('/add_outing', methods=["POST"])
-# def add_outing():
-#     """Inserts new outting into DB"""
-@app.route('/input_scores', methods=["POST"])
-def input_scores():
-    '''add scores for a new round'''
-    db = DB(db_conn)
-    db.new_scores(2,1, request.form)
-    fname='test'
-    return render_template("base.html", players=fname)
+
+@app.route('/outings/id/scores', methods=["GET", "PATCH", "DELETE"])
+def scores():
+    '''updates/deletes/returns outing info:players, courses'''
+    pass
+    # does id have to come last because that is info using?
+
+
+@app.route('/courses', methods=["GET", "POST"])
+def courses():
+    '''
+    Returns all courses in the database
+    Inserts a course in the database and its dependencies 
+    '''
+    pass
+
+@app.route('/courses/id', methods=["GET", "PATCH", "DELETE"])
+def course():
+    ''''''
+    pass
+    # extract id from url - update this
+
+@app.route('/games', methods=["GET", "POST"])
+def games():
+    '''
+    Returns all games in the database
+    Inserts a game in the database and its dependencies 
+    '''
+    pass
+
+@app.route('/games/id', methods=["GET", "PATCH", "DELETE"])
+def game():
+    '''
+    retrieves/updates/deletes game
+    '''
+    pass
+    # extract id from url - update this
 
     
 

@@ -7,6 +7,8 @@
 | DELETE	    |	/players/id	      |	deletes player information: name, handicapp
 | GET	        |	/players/id/rounds|	return round details (score per hole) for player
 | POST	      |	/players/id/rounds|	adds new round for player (score for 9 or 18 holes)
+| PATCH	        |	/players/id/rounds|	updates round details (score per hole) for player
+| DELETE	      |	/players/id/rounds|	deletes round for player (score for 9 or 18 holes)
 | GET	        |	/players/id/scores|	returns player name, total ryder cups points and $ per outing
 | POST	      |	/outings	        |	adds new outing
 | GET	        |	/outings	        |	returns all outings
