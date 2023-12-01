@@ -30,24 +30,30 @@ def players():
     Inserts a player in the database and its dependencies 
     (ex: player/outing table)
     '''
-    print(request.form)
     db = DB(db_conn)
-    players = db.all_player()
-    print(request.form)
-    db = DB(db_conn)
-    db.new_player(request.form)
-    # fname = players[0][1]
+    if request.method == "GET":
+        print(request.form)
+        players = db.get_players()
+    elif request.method == "POST":
+        try:
+            new = db.new_player(request.form)
+        except Exception as e:
+            print("error when called db new player", e)
+        if new: # new player created
+            return render_template("base.html", players=fname), 201
+        else: # db side error:
+            return render_template("error.html", e), 500   
     fname = players
     return render_template("base.html", players=fname)
 
-@app.route('/players/id', methods=["GET", "PATCH", "DELETE"])
-def player():
+@app.route('/players/<player_id>', methods=["GET", "PATCH", "DELETE"])
+def player(player_id):
     '''player information: name, handicapp'''
     pass
     # extract id from url - update this
 
-@app.route('/players/id/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
-def round():
+@app.route('/players/<player_id>/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
+def round(player_id):
     '''
     round details (score per hole) for player
         add scores for a new round
@@ -59,8 +65,8 @@ def round():
     fname='test'
     return render_template("base.html", players=fname)
 
-@app.route('/players/id/scores', methods=["GET"])
-def scores():
+@app.route('/players/<player_id>/scores', methods=["GET"])
+def player_scores(player_id):
     '''
     returns player name, total ryder cups points and $ per outing
     '''
@@ -88,11 +94,11 @@ def outings():
     '''
     print(request)
     db = DB(db_conn)
-    outings = db.all_outings()
+    outings = db.get_outings()
     return render_template("outings.html", outings=outings)
 
 @app.route('/outings/new', methods=["GET", "POST"])
-def new_outings():
+def new_outing():
     '''
     should this be in same endpoint as outings somehow?
     builds form for new outing to be created and then sent
@@ -100,7 +106,7 @@ def new_outings():
     '''
     print(request)
     db = DB(db_conn)
-    outings = db.all_outings()
+    outings = db.get_outings()
     # fname = players[0][1]
     if request.method == 'POST':
         # create new outing
@@ -110,11 +116,11 @@ def new_outings():
         return render_template("layout.html", outings=outings) 
     else:
         # get players, courses, and games for form
-        players = db.all_players()
+        players = db.get_players()
         print(players)
-        courses = db.all_courses()
+        courses = db.get_courses()
         print(courses)
-        games = db.all_games()
+        games = db.get_games()
         print(games)
 
         return render_template("outings.html", players=players, courses = courses,games=games)
@@ -126,9 +132,9 @@ def outing():
     pass
 
 
-@app.route('/outings/id/scores', methods=["GET", "PATCH", "DELETE"])
-def scores():
-    '''updates/deletes/returns outing info:players, courses'''
+@app.route('/outings/outing_id/scores', methods=["GET", "PATCH", "DELETE"])
+def outing_scores():
+    '''returns all players names, total ryder cups points and $ for outing'''
     pass
     # does id have to come last because that is info using?
 

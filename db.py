@@ -1,32 +1,49 @@
-from tkinter import EXCEPTION
+# from sys import exception
+# from tkinter import EXCEPTION
 import psycopg2
 import util
 import psycopg2.extras
-import psycopg2.errors
+import psycopg2.errors as errors
 
 class DB:
-    # copied from DB praject --> set up
+    # copied from DB project --> set up
     def __init__(self, connection):
         self.conn = connection
 
     def new_player(self,form):
-    # TO DO: 
-    # 1. DOC STRING
-    # 2. error handeling
+        '''
+        inserts new player into database
+        input: form data
+        returns (tuple): (True,) if succsfull, (False,error msg if failed
+        '''
 
         # parameterize sql statement to prevent injection 
         insert_player = '''INSERT INTO players (fname, lname, handicapp) VALUES (%s,%s,%s)  RETURNING player_id;'''
-        
+        insert_dependency = '''INSERT INTO player_outing (player_id, outing_id) VALUES (%s,%s)'''
+
         #create a cursor object from connection module
         c = self.conn.cursor()
 
-        c.execute(insert_player, (form['fname'], form['lname'], form['handicapp']))
-        id = c.fetchone()[0]
+        try:
+            c.execute(insert_player, (form['fname'], form['lname'], form['handicapp']))
+            id = c.fetchone()[0]
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting player', e)
+            return (False, e)
 
-        insert_dependency = '''INSERT INTO player_outing (player_id, outing_id) VALUES (%s,%s)'''
-        c.execute(insert_dependency, (id, 1))
-        self.conn.commit()
-        return None
+        try:
+            c.execute(insert_dependency, (id, 1))
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting player', e)
+            return (False, e)
+
+        try:
+            self.conn.commit()
+        except psycopg2.errors.SyntaxError as e:
+            print('error committing', e)
+            return (False, e)
+        
+        return (True,)
     
     def new_scores(self,player_id, course_id, form, outing_id=1):
         c = self.conn.cursor()
@@ -53,7 +70,6 @@ class DB:
             values.append((player_id, round_id, i+1, score, h_score[i]))
 
         value_base = value_base[:-2] + ']'
-        #print(insert_query)
 
         print(base)
 
