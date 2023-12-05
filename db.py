@@ -3,22 +3,39 @@
 import psycopg2
 import util
 import psycopg2.extras
-import psycopg2.errors as errors
+import psycopg2.errors
 
 class DB:
     # copied from DB project --> set up
     def __init__(self, connection):
         self.conn = connection
 
+    def delete(self, entity, id):
+        '''
+        delete player, course, outing and assocaited dependecies
+        '''
+        if entity == 'player':
+            #delete from player table, player_outing, score,
+            pass
+        elif entity == 'course':
+            # delete from course, course_outing, hole, outing_details??, 
+            pass
+        elif entity == 'outing':
+            pass
+        elif entity == 'score':
+            pass
+        elif entity == 'game':
+            pass
+
     def new_player(self,form):
         '''
         inserts new player into database
         input: form data
-        returns (tuple): (True,) if succsfull, (False,error msg if failed
+        returns (tuple): (True,) if succsfull, (False,error msg if failed)
         '''
 
         # parameterize sql statement to prevent injection 
-        insert_player = '''INSERT INTO players (fname, lname, handicapp) VALUES (%s,%s,%s)  RETURNING player_id;'''
+        insert_player = '''INSERT INTO player (fname, lname, handicapp) VALUES (%s,%s,%s)  RETURNING player_id;'''
         insert_dependency = '''INSERT INTO player_outing (player_id, outing_id) VALUES (%s,%s)'''
 
         #create a cursor object from connection module
@@ -32,7 +49,7 @@ class DB:
             return (False, e)
 
         try:
-            c.execute(insert_dependency, (id, 1))
+            c.execute(insert_dependency, (id,  form['outingId']))
         except psycopg2.errors.SyntaxError as e:
             print('error inserting player', e)
             return (False, e)
@@ -45,11 +62,11 @@ class DB:
         
         return (True,)
     
-    def new_scores(self,player_id, course_id, form, outing_id=1):
+    def new_scores(self,form, outing_id=1):
         c = self.conn.cursor()
-        round_id = self.insert_round(course_id, outing_id)
-        holes = self.course_handicapp(course_id)
-        handicapp = self.player_handicapp(player_id)
+        round_id = self.insert_round(form['course_id'], outing_id)
+        holes = self.course_handicapp(form['course_id'])
+        handicapp = self.player_handicapp(form['player_id'])
         h_score=util.h_adjusted_score(holes,list(form.values()),handicapp,9)
 
         print(h_score)
@@ -66,8 +83,8 @@ class DB:
 
         #insert_query = base.format(records_list_template)
         for i,score in enumerate(h_score):
-            value_base = value_base + f'({player_id}, {round_id}, {i+1}, {score}, {h_score[i]}), ' 
-            values.append((player_id, round_id, i+1, score, h_score[i]))
+            value_base = value_base + f'({form['player_id']}, {round_id}, {i+1}, {score}, {h_score[i]}), ' 
+            values.append((form['player_id'], round_id, i+1, score, h_score[i]))
 
         value_base = value_base[:-2] + ']'
 
@@ -113,17 +130,26 @@ class DB:
             c.execute('select * from outing;')
         else:
             # paramaterize
-            c.execute('select * from outing where id = id;')
+            query = 'select * from outing where id = (%s)'
+            c.execute(query, (id,))
         return c.fetchall()
     
     def update_outing(self):
         pass
     
-    def get_courses(self):
-        # return all players regardless of outing
+    def get_courses(self, id = None):
+        # return all  courses regardless of outing
         c = self.conn.cursor()
-        c.execute('select * from course;')
-        return c.fetchall()
+        query = 'select * from course'
+        if id:
+            query += 'where course_id=(%s)'
+        try:
+            c.execute(query, (id,))
+        except psycopg2.errors.SyntaxError as e:
+            return (False, e)
+        except psycopg2.errors.UndefinedTable as e:
+            return (False, e)
+        return (True,c.fetchall())
 
     def get_games(self):
         # return all players regardless of outing
@@ -131,11 +157,61 @@ class DB:
         c.execute('select * from game_type;')
         return c.fetchall()    
     
-    def get_players(self):
-        # return all players regardless of outing
+    def get_players(self, id=None):
+        '''
+        retrieves all players regardless of outing
+        input: postgres connection object 
+        returns: (boolean, string) tuple: True and query result if succesful, 
+            False and error if fails
+        '''
         c = self.conn.cursor()
-        c.execute('select * from player;')
-        return c.fetchall()
+
+        query = 'select * from player'
+        if id:
+            query += 'where player_id=(%s)'
+        try:
+            c.execute(query, (id,))
+        except psycopg2.errors.SyntaxError as e:
+            return (False, e)
+        except psycopg2.errors.UndefinedTable as e:
+            return (False, e)
+        return (True,c.fetchall())
+    
+    def update_player(self, form, id):
+        '''
+        updates player info
+        input: db connection and form (dict)
+        returns (tuple): 
+            True and player name if success, 
+            False and error if fails
+        if id doesn't exist updates 0, doesn't error
+        '''
+        c = self.conn.cursor()
+        params =  []
+        query = 'UPDATE player SET '
+
+        if 'fname' in form:
+            query += 'fname = (%s) '
+            params.append(form['fname'])
+        if 'lname' in form:
+            if 'fname' in form:
+                query += ', '
+            query += ' lname = (%s) '
+            params.append(form['lname'])
+        if 'handicapp' in form:
+            # only add comma if another param
+            if 'fname' in form or 'lname' in form:
+                query += ', '
+            query += ' handicapp = (%s) '
+            params.append(form['handicapp'])
+            
+        query += ' WHERE player_id=(%s);'
+        params.append(id) 
+        print(query, params)
+        c.execute(query, tuple(params))
+        self.conn.commit()
+        return True  
+
     
     def player_details(self,id):
         # returns player and scores, grouped by outing
@@ -151,7 +227,7 @@ class DB:
         # returns all players in outings and their total scores
         c = self.conn.cursor()
         query='''SELECT o.name, p.*, sum(score) as score, sum(handicapp_score) as h_score  
-            from players p 
+            from player p 
             JOIN scores s on p.player_id = s.player_id 
             JOIN player_outing po on p.player_id = po.player_id 
             JOIN outings o on po.outing_id = o.outing_id

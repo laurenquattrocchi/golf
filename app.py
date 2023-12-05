@@ -27,6 +27,7 @@ def test():
     # return render_template("add_score.html")
     return render_template("test_child.html")
 
+# updated 12/5
 @app.route('/players', methods=["GET", "POST"])
 def players():
     '''
@@ -36,38 +37,77 @@ def players():
     '''
     db = DB(db_conn)
     if request.method == "GET":
-        print(request.form)
-        players = db.get_players()
+        try:
+            success, players = db.get_players()
+            if success:
+                return render_template("display.html", header="Players", 
+                        content=players),200
+            else:
+                return render_template("error.html", error=players), 500
+        except TypeError as e:
+            return render_template("error.html", error = e), 500
+
+    # outing_id will have to be passed in form data somehow - hidden field?
     elif request.method == "POST":
         try:
             new = db.new_player(request.form)
+            if new: # new player created
+                return render_template("base.html", player=request.form['fname']), 201
+            else: # db side error:
+                return render_template("error.html", error=e), 500 
         except Exception as e:
             print("error when called db new player", e)
-        if new: # new player created
-            return render_template("base.html", players=fname), 201
-        else: # db side error:
-            return render_template("error.html", e), 500   
-    fname = players
-    return render_template("base.html", players=fname)
+            return render_template("error.html", error=e), 500 
 
+# updated 12/5 - needs delete still
 @app.route('/players/<player_id>', methods=["GET", "PATCH", "DELETE"])
 def player(player_id):
     '''player information: name, handicapp'''
-    pass
-    # extract id from url - update this
+    db = DB(db_conn)
+    if request.method == "GET":
+        try:
+            success, players = db.get_players(player_id)
+            if success:
+                return render_template("display.html", header="Player", 
+                        content=players),200
+            else:
+                return render_template("error.html", error=players), 500
+        except TypeError as e:
+            return render_template("error.html", error = e), 500
+    elif request.method == "PATCH":
+        print(request.form)
+        db.update_player(request.form,player_id)
+        return render_template("display.html", header="Updated Player"),200
+    elif request.method == "DELETE":
+        # need to update delete queries
+        pass
 
-@app.route('/players/<player_id>/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
-def round(player_id):
+# updated 12/5 -> needs error handeling, make another endpoint to get all 
+# round scores for player_id?
+# need to fix db.new_scores()
+# @app.route('/players/<player_id>/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
+# get player_id from form
+@app.route('/players/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
+def round():
     '''
     round details (score per hole) for player
         add scores for a new round
 
     '''
-    # extract id from url - update this, does id need to come after rounds?
     db = DB(db_conn)
-    db.new_scores(2,1, request.form)
-    fname='test'
-    return render_template("base.html", players=fname)
+    if request.method == "GET":
+        success, players = db.get_players()
+        for x in players:
+            print(x[0], x[1])
+        print(players)
+        success,courses = db.get_courses()
+        print(courses)
+        return render_template("add_score.html", courses=courses, players=players)
+    # form include course - from drop down, send id
+    elif request.method == "POST":
+        print(request.form)
+        db.new_scores(request.form)
+        return render_template("display.html", header="ADDED SCORE")
 
 @app.route('/players/<player_id>/scores', methods=["GET"])
 def player_scores(player_id):
@@ -121,7 +161,6 @@ def new_outing():
     else:
         # get players, courses, and games for form
         players = db.get_players()
-        print(players)
         courses = db.get_courses()
         print(courses)
         games = db.get_games()

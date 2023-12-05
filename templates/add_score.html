@@ -5,20 +5,18 @@
 </head>
 <body>
     <h1>Add new score</h1>
-    <select name="player">
-    <!-- populate with names from players table, id as hidden field, when submit send id through-->
-        <option value="mike">Mike</option>
-        <option value="dave">Dave</option>
-        <option value="lauren">Lauren</option>
-        <!-- option to add player -->
-    </select>
-    <select name="course">
-        <!-- populate with names from players table, id as hidden field, when submit send id throug-->
-            <option value="Richter">Richter</option>
-        <!-- option to add course -->
-    </select>
+    <form action = "/players/rounds" method = "post" enctype="multipart/form-data">
+        <label>name:<select>
+            {% for x in players %}
+                <option value="{{x[0]}}">{{x[1]}}</option>
+            {% endfor %}
+        </select></label><br>
+        <label>course: <select>
+            {% for x in courses %}
+                <option value="{{x[0]}}">{{x[1]}}</option>
+            {% endfor %}
+        </select></label><br>
     <hr><br>
-    <form action = "/input_scores" method = "post" enctype="multipart/form-data">
         <label>hole 1:</label> <input type="number" name="1" required><br>
         <label>hole 2:</label> <input type="number" name="2" required><br>
         <label>hole 3:</label> <input type="number" name="3" required><br>
