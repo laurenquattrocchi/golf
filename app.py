@@ -2,6 +2,7 @@ from flask import Flask, request, render_template #, url_for
 import logging
 import psycopg2
 from db import DB
+from getpass import getpass
 
 # Configure application
 app = Flask(__name__)
@@ -9,8 +10,11 @@ app = Flask(__name__)
 # update to pull from app
 outing = 1
 
-#DB connection REMOVE HARD CODING
-db_conn = psycopg2.connect("dbname=postgres user=postgres password=jzYezhkUW3UUXn")
+#DB connection
+db_conn = psycopg2.connect(
+    dbname="postgres",
+    user="postgres")#, 
+    #password="jzYezhkUW3UUXn")
 
 # default path
 @app.route('/')
