@@ -64,64 +64,69 @@ class DB:
     
     def new_scores(self,form, outing_id=1):
         c = self.conn.cursor()
-        round_id = self.insert_round(form['course_id'], outing_id)
-        holes = self.course_handicapp(form['course_id'])
-        handicapp = self.player_handicapp(form['player_id'])
-        h_score=util.h_adjusted_score(holes,list(form.values()),handicapp,9)
-
-        print(h_score)
-        value_base = '['
+        round_id = self.insert_round(form['course'], outing_id)
+        holes = self.course_handicapp(form['course'])
+        handicapp = self.player_handicapp(form['player'])
+        scores = list(form.values())[2:]  # [2:] -> player and course id first 2 values in list      
+        h_score=util.h_adjusted_score(holes,scores,handicapp,9)
         values=[]
-        #value_base = ''
-
         base ='''INSERT INTO score (PLAYER_ID, ROUND_ID, HOLE, SCORE, HANDICAPP_SCORE) VALUES %s'''
-        # have to build value part of string and scores to calc h_score
-        # for i, hole in enumerate(form.items()):
-        #     hole,score = hole
-        #     base = base + ' (%s,%s,%s,%s,%s)'
-        #records_list_template = ','.join(['%s'] * len(h_score))
-
-        #insert_query = base.format(records_list_template)
         for i,score in enumerate(h_score):
-            value_base = value_base + f'({form['player_id']}, {round_id}, {i+1}, {score}, {h_score[i]}), ' 
-            values.append((form['player_id'], round_id, i+1, score, h_score[i]))
-
-        value_base = value_base[:-2] + ']'
-
-        print(base)
-
-        values2 = [
-            (1, 1, 1, 0, 0),
-            (1, 1, 2, 2, 2),
-            (1, 1, 3, 3, 3),
-            (1, 1, 4, 3, 3),
-            (1, 1, 5, 3, 3),
-            (1, 1, 6, 3, 3),
-            (1, 1, 7, 4, 4),
-            (1, 1, 8, 6, 6),
-            (1, 1, 9, 6, 6)
-        ]
-        value_base = list(value_base)
-        print(type(value_base))
-        print(values)
-        print(type(values))
+            values.append((form['player'], round_id, i+1, scores[i], score))
         try:
             psycopg2.extras.execute_values (
                 c, base, values
             )
         except psycopg2.errors.SyntaxError as e:
-            print(str(e))
+            print('error inserting player', e)
+            return (False, e)
         except Exception as e:
-            print(e)
+            print('eror', e)
+            return (False, e)
 
-        self.conn.commit()
-        # c.execute(insert_query, value_base)
+        try:
+            self.conn.commit()
+        except psycopg2.errors.SyntaxError as e:
+            print('error committing', e)
+            return (False, e)
+        
+        return (True,"success")
+
         
     def new_outing(self, form):
-        # insert into table
-        # return true if insert is success
-        print(form)
-        return None
+        '''
+        inserts new outing into database
+        input: form data
+        returns (tuple): (True,) if succsfull, (False,error msg if failed)
+        '''
+
+        # parameterize sql statement to prevent injection 
+        insert_outing = '''INSERT INTO outing (name) VALUES (%s,)  RETURNING outing_id;'''
+        insert_dependency = '''INSERT INTO course_outing (outing_id, course_id,) VALUES (%s,%s)'''
+
+        #create a cursor object from connection module
+        c = self.conn.cursor()
+
+        try:
+            c.execute(insert_outing, (form['name'],))
+            id = c.fetchone()[0]
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting outing', e)
+            return (False, e)
+
+        try:
+            c.execute(insert_dependency, (id,  form['course_id']))
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting player', e)
+            return (False, e)
+
+        try:
+            self.conn.commit()
+        except psycopg2.errors.SyntaxError as e:
+            print('error committing', e)
+            return (False, e)
+        
+        return (True,)
 
     def get_outings(self, id = None):
         # return all players regardless of outing

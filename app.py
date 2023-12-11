@@ -18,6 +18,7 @@ db_conn = psycopg2.connect(
 
 # default path
 @app.route('/')
+#@app.route('/')
 def home():
     # return render_template("add_score.html")
     return render_template("homepage.html")
@@ -82,11 +83,11 @@ def player(player_id):
         # need to update delete queries
         pass
 
-# updated 12/5 -> needs error handeling, make another endpoint to get all 
-# round scores for player_id?
-# need to fix db.new_scores()
+
+# make another endpoint to get all round scores for player_id? :
 # @app.route('/players/<player_id>/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
-# get player_id from form
+
+# updated 12/11 -> needs error handeling, 
 @app.route('/players/rounds', methods=["GET", "POST", "PATCH", "DELETE"])
 def round():
     '''
@@ -96,19 +97,21 @@ def round():
     '''
     db = DB(db_conn)
     if request.method == "GET":
-        success, players = db.get_players()
+        p_success, players = db.get_players()
         for x in players:
             print(x[0], x[1])
-        print(players)
-        success,courses = db.get_courses()
-        print(courses)
-        return render_template("add_score.html", courses=courses, players=players)
-    # form include course - from drop down, send id
+        c_success,courses = db.get_courses()
+        if p_success and c_success:
+            return render_template("add_score.html", courses=courses, players=players)
+        else:
+           return render_template("error.html", error = players + ' ' + courses), 500 
     elif request.method == "POST":
-        print(request.form)
-        db.new_scores(request.form)
-        return render_template("display.html", header="ADDED SCORE")
-
+        created, e = db.new_scores(request.form)
+        if created:
+            return render_template("display.html", header="ADDED ROUND SCORES"), 201
+        else:
+           return render_template("error.html", error = e), 500 
+        
 @app.route('/players/<player_id>/scores', methods=["GET"])
 def player_scores(player_id):
     '''
@@ -116,56 +119,44 @@ def player_scores(player_id):
     '''
     # extract id from url - update this, does id need to come after scores?
 
-@app.route('/outings', methods=["GET", "POST"])
+@app.route('/outings', methods=["GET", "PATCH"])
 def outings():
     '''
-    Inserts a outing in the database and its dependencies 
-    (ex: player/outing table)
+    GET :Returns all outings in the database
+    PATCH: updates outing in db?
     '''
-    print(request.form)
-    db = DB(db_conn)
-    try:
-        success = db.new_outing(request.form)
-    except Exception as e:
-        print(e)
-    print(request.form)
-    if success:
-        pass
-        # render name of outing created succesfully 
 
-    '''
-    Returns all outings in the database
-    '''
-    print(request)
     db = DB(db_conn)
-    outings = db.get_outings()
-    return render_template("outings.html", outings=outings)
+    if request.method == "GET":
+        outings = db.get_outings()
+        return render_template("display.html", headers="outings", content=outings)
 
+# 12/11
+# need to finish db.new_outing
 @app.route('/outings/new', methods=["GET", "POST"])
 def new_outing():
     '''
-    should this be in same endpoint as outings somehow?
-    builds form for new outing to be created and then sent
-    to /outings
+    GET: builds form for new outing to be created 
+    POST: creates new outing
+    how should this meld with /outings??
     '''
-    print(request)
+    print(request.form)
     db = DB(db_conn)
     outings = db.get_outings()
     # fname = players[0][1]
     if request.method == 'POST':
         # create new outing
-        db.new_outing(request.form)
+        #db.new_outing(request.form)
         outings=["we", "did", "it"]
         #if successful return success message
         return render_template("layout.html", outings=outings) 
     else:
         # get players, courses, and games for form
-        players = db.get_players()
-        courses = db.get_courses()
-        print(courses)
+        success, players = db.get_players()
+        success, courses = db.get_courses()
+        print('course', courses)
         games = db.get_games()
-        print(games)
-
+        print('game',games)
         return render_template("outings.html", players=players, courses = courses,games=games)
 
 @app.route('/outings/id', methods=["GET", "PATCH", "DELETE"])

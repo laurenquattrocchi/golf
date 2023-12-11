@@ -16,6 +16,7 @@ def h_adjusted_score(holes:list, scores:list, p_handicapp:int, num_played=18)->l
 
     # if only play 9 holes
     if num_played==9:
+        # will this always give hole 1-9-> query always return list in hole order??
         holes = holes[:9]
         scores = scores[:9]
 

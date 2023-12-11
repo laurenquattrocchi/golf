@@ -6,17 +6,21 @@
 <body>
     <h1>Add new score</h1>
     <form action = "/players/rounds" method = "post" enctype="multipart/form-data">
-        <label>name:<select>
+    <!-- <form action = "/players/rounds" method = "post" enctype="application/json"> -->
+        <label for="name">Name:</label>
+        <select name="player">
             {% for x in players %}
                 <option value="{{x[0]}}">{{x[1]}}</option>
             {% endfor %}
-        </select></label><br>
-        <label>course: <select>
+        </select><br>
+        <label for="course"> Course:</label>
+         <select name="course">
             {% for x in courses %}
                 <option value="{{x[0]}}">{{x[1]}}</option>
             {% endfor %}
-        </select></label><br>
+        </select><br>
     <hr><br>
+    <fieldset name="scores">
         <label>hole 1:</label> <input type="number" name="1" required><br>
         <label>hole 2:</label> <input type="number" name="2" required><br>
         <label>hole 3:</label> <input type="number" name="3" required><br>
@@ -35,6 +39,7 @@
         <label>hole 16:</label> <input type="number" name="16" value="0"><br>
         <label>hole 17:</label> <input type="number" name="17" value="0"><br>
         <label>hole 18:</label> <input type="number" name="18" value="0"><br>
+    </fieldset>
         <input type = "submit" value="Create">
     </form>
 
