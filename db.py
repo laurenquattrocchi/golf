@@ -63,6 +63,12 @@ class DB:
         return (True,)
     
     def new_scores(self,form, outing_id=1):
+        '''
+        determines handicapp scores and 
+        inserts new scores for a round into score table
+        input: form data # outing id will be included in form data at somepoint??
+        returns (tuple): (True,) if succsfull, (False,error msg if failed)
+        '''
         c = self.conn.cursor()
         round_id = self.insert_round(form['course'], outing_id)
         holes = self.course_handicapp(form['course'])
@@ -139,11 +145,34 @@ class DB:
             c.execute(query, (id,))
         return c.fetchall()
     
-    def update_outing(self):
-        pass
+    def update_outing(self, form={'name':'test', 'id':1}):
+        '''
+        updates outing information
+        input: postgres connection object, form data (dict)
+        returns (tuple): (True,) if succsfull, (False,error msg if failed) 
+        '''
+        c = self.conn.cursor()
+        params =  []
+        query = 'UPDATE outing SET '
+
+        if 'name' in form:
+            query += 'name = (%s) '
+            params.append(form['name'])
+           
+        query += ' WHERE outing_id=(%s);'
+        params.append(form['id']) 
+        print(query, params)
+        try:
+            c.execute(query, tuple(params))
+            self.conn.commit()
+        #catch more specific errors
+        except Exception as e:
+            return (False, e)
+        return (True, 'updated')  
     
     def get_courses(self, id = None):
         # return all  courses regardless of outing
+        # input postgres connection object 
         c = self.conn.cursor()
         query = 'select * from course'
         if id:
@@ -157,7 +186,8 @@ class DB:
         return (True,c.fetchall())
 
     def get_games(self):
-        # return all players regardless of outing
+        # return all games
+        # input: postgres connection object 
         c = self.conn.cursor()
         c.execute('select * from game_type;')
         return c.fetchall()    
@@ -244,8 +274,20 @@ class DB:
     def round_details(self, outing_id, player_id):
         # returns total player score for player by round
         c = self.conn.cursor()
-        query = """select p.*, """
-    
+        query = """SELECT round_id, sum(score) as score, sum(handicapp_score) as h_score 
+                   FROM score 
+                   WHERE player_id = (%s) AND 
+                   round_id IN (select round_id from round where outing_id = (%s))
+                   GROUP BY round_id; """
+        
+        try:
+            c.execute(query, (player_id,outing_id))
+            totals = c.fetchall()
+            print(totals)
+        except Exception as e:
+            self.conn.rollback()
+            print('failed to execute, rolling back', e)
+
     def course_handicapp(self, course_id):
         #get handicapp for each hole
         c = self.conn.cursor() 
@@ -257,7 +299,7 @@ class DB:
         return holes
 
     def insert_round(self,course_id, outing_id):
-        # only insert if doesn't already exists
+        # UPDATE TO only insert if doesn't already exists
         c = self.conn.cursor() 
         c.execute("SELECT round_id from round where course_id=(%s) and outing_id=(%s);", (course_id, outing_id))
         round_id = c.fetchall()
@@ -275,28 +317,3 @@ class DB:
         c.execute(h_query,(player_id,))
         # error handle, if this errors, playerid doesn't exist
         return c.fetchall()[0][0]
-
-
-    def test(self):
-        from psycopg2 import extras
-        # Create a cursor
-        c = self.conn.cursor()
-
-        # Your list of values
-        values = [
-            (1, 1, 1, 0, 0),
-            (1, 1, 2, 2, 2),
-            (1, 1, 3, 3, 3),
-            (1, 1, 4, 3, 3),
-            (1, 1, 5, 3, 3),
-            (1, 1, 6, 3, 3),
-            (1, 1, 7, 4, 4),
-            (1, 1, 8, 6, 6),
-            (1, 1, 9, 6, 6)
-        ]
-
-        # Your base SQL query
-        base = '''INSERT INTO score (PLAYER_ID, ROUND_ID, HOLE, SCORE, HANDICAPP_SCORE) VALUES %s'''
-
-        # Execute the query using execute_values
-        print(extras.execute_values(c, base, values))
