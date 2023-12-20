@@ -1,0 +1,11 @@
+<!-- <!doctype html> -->
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{header}}</h1>
+        {% for x in content%}
+        <p>{{x[1]}}</p>
+        {% endfor %}
+
+{% endblock %}
+
