@@ -171,8 +171,10 @@ class DB:
         '''
 
         # parameterize sql statement to prevent injection 
-        insert_outing = '''INSERT INTO outing_ (name) VALUES (%s,)  RETURNING outing_id;'''
-        insert_dependency = '''INSERT INTO course_outing_ (outing_id, course_id,) VALUES (%s,%s)'''
+        insert_outing = '''INSERT INTO outing_ (name) VALUES (%s)  RETURNING outing_id;'''
+        insert_dependency = '''INSERT INTO course_outing_ (outing_id, course_id) VALUES (%s,%s)'''
+        #insert into course_outing_ seleceted courses
+        # insert into player_outing_ selected players
 
         #create a cursor object from connection module
         c = self.conn.cursor()
@@ -185,7 +187,7 @@ class DB:
             return (False, e)
 
         try:
-            c.execute(insert_dependency, (id,  form['course_id']))
+            c.execute(insert_dependency, (id,  form['course']))
         except psycopg2.errors.SyntaxError as e:
             print('error inserting player', e)
             return (False, e)
@@ -196,7 +198,7 @@ class DB:
             print('error committing', e)
             return (False, e)
         
-        return (True,)
+        return (True,None)
 
     def get_outings(self, id = None):
         # return all players regardless of outing
@@ -253,7 +255,7 @@ class DB:
         # return all games
         # input: postgres connection object 
         c = self.conn.cursor()
-        c.execute('select * from game_type_;')
+        c.execute('select * from game_;')
         return c.fetchall()    
     
     def get_players(self, id=None):

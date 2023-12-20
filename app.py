@@ -206,10 +206,13 @@ def new_outing():
     # fname = players[0][1]
     if request.method == 'POST':
         # create new outing
-        #db.new_outing(request.form)
-        outings=["we", "did", "it"]
-        #if successful return success message
-        return render_template("layout.html", outings=outings) 
+        success,error = db.new_outing(request.form)
+        if success:
+            return render_template("layout.html", outings=f"succesfully created {request.form['name']} outing") 
+        
+        else:
+            return render_template("layout.html", outings=f"error: {error}")  
+        
     else:
         # get players, courses, and games for form
         success, players = db.get_players()
