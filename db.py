@@ -26,6 +26,70 @@ class DB:
             pass
         elif entity == 'game':
             pass
+    
+    def valid_login(self,form):
+        '''
+        check if form.email.data and 
+        form.password.data == valid email and password for user
+        input: wtform from inputform()
+        output (boolean): True if email and pswd valid, False otherwiser
+
+        '''
+        c = self.conn.cursor()
+        query = '''select password from user_ where email=(%s)'''
+        c.execute(query, (form.email.data,))
+        #pswd = c.fetchall()
+        pswd = c.fetchone()
+        print(pswd)
+        ### NEED TO HANDLE HASHING PASSWORD 
+        if pswd[0] == form.password.data:
+            return True, 4
+        else:
+            return False, 7
+
+    def new_user(self,form):
+        '''
+        inserts new user into user_ table and player in player_ table
+        input: form data
+        returns (tuple): (True,) if succsfull, (False,error msg if failed)
+        '''
+
+        #confirm user by email doesn't already exist
+        c = self.conn.cursor()
+
+        # parameterize sql statement to prevent injection 
+        insert_user = '''INSERT INTO user_ (player_id, email, salt, password) VALUES (%s,%s,%s,%s)  RETURNING user_id;'''
+        # update to just call new player once determine which form want to move forward with wtform/html form
+        insert_player = '''INSERT INTO player_ (fname, lname, handicap) VALUES (%s,%s,%s) RETURNING player_id;'''
+        try:
+            c.execute(insert_player, (form.first_name.data, form.last_name.data, form.handicap.data))
+            player_id = c.fetchone()[0]
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting player', e)
+            self.conn.rollback()
+            return (False, e)
+        
+        # HASH PASSWORD BEFORE STORING
+        try:
+            c.execute(insert_user, (player_id, form.email.data, "placeholder", form.password.data))
+            user_id = c.fetchone()[0]
+        except psycopg2.errors.UniqueViolation as e:
+            self.conn.rollback()
+            return(False, "duplicate")
+        except psycopg2.errors.SyntaxError as e:
+            print('error inserting user', e)
+            self.conn.rollback()
+            return (False, e)
+        
+        try:
+            self.conn.commit()
+        except psycopg2.errors.SyntaxError as e:
+            self.conn.rollback()
+            print('error committing', e)
+            return (False, e) 
+   
+        return (True,"")      
+
 
     def new_player(self,form):
         '''
@@ -35,14 +99,14 @@ class DB:
         '''
 
         # parameterize sql statement to prevent injection 
-        insert_player = '''INSERT INTO player (fname, lname, handicapp) VALUES (%s,%s,%s)  RETURNING player_id;'''
-        insert_dependency = '''INSERT INTO player_outing (player_id, outing_id) VALUES (%s,%s)'''
+        insert_player = '''INSERT INTO player_ (fname, lname, handicap) VALUES (%s,%s,%s)  RETURNING player_id;'''
+        insert_dependency = '''INSERT INTO player_outing_ (player_id, outing_id) VALUES (%s,%s)'''
 
         #create a cursor object from connection module
         c = self.conn.cursor()
 
         try:
-            c.execute(insert_player, (form['fname'], form['lname'], form['handicapp']))
+            c.execute(insert_player, (form['fname'], form['lname'], form['handicap']))
             id = c.fetchone()[0]
         except psycopg2.errors.SyntaxError as e:
             print('error inserting player', e)
@@ -64,19 +128,19 @@ class DB:
     
     def new_scores(self,form, outing_id=1):
         '''
-        determines handicapp scores and 
+        determines handicap scores and 
         inserts new scores for a round into score table
         input: form data # outing id will be included in form data at somepoint??
         returns (tuple): (True,) if succsfull, (False,error msg if failed)
         '''
         c = self.conn.cursor()
         round_id = self.insert_round(form['course'], outing_id)
-        holes = self.course_handicapp(form['course'])
-        handicapp = self.player_handicapp(form['player'])
+        holes = self.course_handicap(form['course'])
+        handicap = self.player_handicap(form['player'])
         scores = list(form.values())[2:]  # [2:] -> player and course id first 2 values in list      
-        h_score=util.h_adjusted_score(holes,scores,handicapp,9)
+        h_score=util.h_adjusted_score(holes,scores,handicap,9)
         values=[]
-        base ='''INSERT INTO score (PLAYER_ID, ROUND_ID, HOLE, SCORE, HANDICAPP_SCORE) VALUES %s'''
+        base ='''INSERT INTO score_ (PLAYER_ID, ROUND_ID, HOLE, SCORE, handicap_SCORE) VALUES %s'''
         for i,score in enumerate(h_score):
             values.append((form['player'], round_id, i+1, scores[i], score))
         try:
@@ -107,8 +171,8 @@ class DB:
         '''
 
         # parameterize sql statement to prevent injection 
-        insert_outing = '''INSERT INTO outing (name) VALUES (%s,)  RETURNING outing_id;'''
-        insert_dependency = '''INSERT INTO course_outing (outing_id, course_id,) VALUES (%s,%s)'''
+        insert_outing = '''INSERT INTO outing_ (name) VALUES (%s,)  RETURNING outing_id;'''
+        insert_dependency = '''INSERT INTO course_outing_ (outing_id, course_id,) VALUES (%s,%s)'''
 
         #create a cursor object from connection module
         c = self.conn.cursor()
@@ -138,10 +202,10 @@ class DB:
         # return all players regardless of outing
         c = self.conn.cursor()
         if id == None:
-            c.execute('select * from outing;')
+            c.execute('select * from outing_;')
         else:
             # paramaterize
-            query = 'select * from outing where id = (%s)'
+            query = 'select * from outing_ where id = (%s)'
             c.execute(query, (id,))
         return c.fetchall()
     
@@ -174,7 +238,7 @@ class DB:
         # return all  courses regardless of outing
         # input postgres connection object 
         c = self.conn.cursor()
-        query = 'select * from course'
+        query = 'select * from course_'
         if id:
             query += 'where course_id=(%s)'
         try:
@@ -189,7 +253,7 @@ class DB:
         # return all games
         # input: postgres connection object 
         c = self.conn.cursor()
-        c.execute('select * from game_type;')
+        c.execute('select * from game_type_;')
         return c.fetchall()    
     
     def get_players(self, id=None):
@@ -201,7 +265,7 @@ class DB:
         '''
         c = self.conn.cursor()
 
-        query = 'select * from player'
+        query = 'select * from player_'
         if id:
             query += 'where player_id=(%s)'
         try:
@@ -233,12 +297,12 @@ class DB:
                 query += ', '
             query += ' lname = (%s) '
             params.append(form['lname'])
-        if 'handicapp' in form:
+        if 'handicap' in form:
             # only add comma if another param
             if 'fname' in form or 'lname' in form:
                 query += ', '
-            query += ' handicapp = (%s) '
-            params.append(form['handicapp'])
+            query += ' handicap = (%s) '
+            params.append(form['handicap'])
             
         query += ' WHERE player_id=(%s);'
         params.append(id) 
@@ -251,9 +315,9 @@ class DB:
     def player_details(self,id):
         # returns player and scores, grouped by outing
         c = self.conn.cursor()
-        query='''SELECT outing_id, p.*, sum(score) as score, sum(handicapp_score) as h_score 
-                from players p 
-                JOIN scores s on p.player_id = s.player_id 
+        query='''SELECT outing_id, p.*, sum(score) as score, sum(handicap_score) as h_score 
+                from player_ p 
+                JOIN score_ s on p.player_id = s.player_id 
                 where player_id=(%s) group by outing_id, p.player_id;'''
         c.execute(query, (id,))
         return c.fetchall()      
@@ -261,11 +325,11 @@ class DB:
     def outing_details(self, outing_id=1):
         # returns all players in outings and their total scores
         c = self.conn.cursor()
-        query='''SELECT o.name, p.*, sum(score) as score, sum(handicapp_score) as h_score  
-            from player p 
-            JOIN scores s on p.player_id = s.player_id 
-            JOIN player_outing po on p.player_id = po.player_id 
-            JOIN outings o on po.outing_id = o.outing_id
+        query='''SELECT o.name, p.*, sum(score) as score, sum(handicap_score) as h_score  
+            from player_ p 
+            JOIN score_ s on p.player_id = s.player_id 
+            JOIN player_outing_ po on p.player_id = po.player_id 
+            JOIN outing_ o on po.outing_id = o.outing_id
             where o.outing_id = (%s) group by o.outing_id, p.player_id;'''
         
         c.execute(query, (id,))
@@ -274,10 +338,10 @@ class DB:
     def round_details(self, outing_id, player_id):
         # returns total player score for player by round
         c = self.conn.cursor()
-        query = """SELECT round_id, sum(score) as score, sum(handicapp_score) as h_score 
-                   FROM score 
+        query = """SELECT round_id, sum(score) as score, sum(handicap_score) as h_score 
+                   FROM score_
                    WHERE player_id = (%s) AND 
-                   round_id IN (select round_id from round where outing_id = (%s))
+                   round_id IN (select round_id from round_ where outing_id = (%s))
                    GROUP BY round_id; """
         
         try:
@@ -288,10 +352,10 @@ class DB:
             self.conn.rollback()
             print('failed to execute, rolling back', e)
 
-    def course_handicapp(self, course_id):
-        #get handicapp for each hole
+    def course_handicap(self, course_id):
+        #get handicap for each hole
         c = self.conn.cursor() 
-        query ='''select hole,handicapp from hole where course_id=(%s)''' 
+        query ='''select hole,handicap from hole_ where course_id=(%s)''' 
         c.execute(query,(course_id,))
         holes = c.fetchall()
         #just in case doesn't pull from database in hole order?
@@ -301,19 +365,19 @@ class DB:
     def insert_round(self,course_id, outing_id):
         # UPDATE TO only insert if doesn't already exists
         c = self.conn.cursor() 
-        c.execute("SELECT round_id from round where course_id=(%s) and outing_id=(%s);", (course_id, outing_id))
+        c.execute("SELECT round_id from round_ where course_id=(%s) and outing_id=(%s);", (course_id, outing_id))
         round_id = c.fetchall()
         if round_id==[]:
-            insert_round = '''INSERT INTO round (course_id, outing_id) VALUES (%s,%s) RETURNING round_id'''
+            insert_round = '''INSERT INTO round_ (course_id, outing_id) VALUES (%s,%s) RETURNING round_id'''
             c.execute(insert_round, (course_id, outing_id))
             return c.fetchone()[0]
         else:
             return round_id[0][0]
 
-    def player_handicapp(self,player_id):
-        # get individual players handicapp
+    def player_handicap(self,player_id):
+        # get individual players handicap
         c = self.conn.cursor()
-        h_query = '''select handicapp from player where player_id=(%s)''' 
+        h_query = '''select handicap from player_ where player_id=(%s)''' 
         c.execute(h_query,(player_id,))
         # error handle, if this errors, playerid doesn't exist
         return c.fetchall()[0][0]

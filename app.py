@@ -1,11 +1,15 @@
-from flask import Flask, request, render_template #, url_for
+from os import error
+from flask import Flask, request, render_template, redirect, session, url_for
 import logging
 import psycopg2
 from db import DB
-from getpass import getpass
+# from getpass import getpass -> where did this come from??
+from forms import SignUpForm, LoginForm
 
 # Configure application
 app = Flask(__name__)
+# needed form.csrf_token -> need to hash 
+app.config['SECRET_KEY'] = 'dfewfew123213rwdsgert34tgfd1234trgf'
 
 # update to pull from app
 outing = 1
@@ -18,8 +22,7 @@ db_conn = psycopg2.connect(
 
 # default path
 @app.route('/')
-#@app.route('/')
-def home():
+def homepage():
     # return render_template("add_score.html")
     return render_template("homepage.html")
 
@@ -27,6 +30,63 @@ def home():
 def test():
     # return render_template("add_score.html")
     return render_template("test_child.html")
+
+@app.route('/login',  methods=["GET", "POST"])
+def login():
+    form=LoginForm()
+    db = DB(db_conn)
+    if form.validate_on_submit():
+        valid, user_id = db.valid_login(form)
+        session['user']=user_id
+        if valid:
+            return render_template("homepage.html")
+    print(form.errors.items())
+    if request.method == "GET":
+        return render_template("login.html", form=form)
+    else:
+        return render_template("login.html", form=form, error="invalid email or password")
+
+@app.route('/logout',  methods=["GET", "POST"])
+def logout():
+    if session['user']:
+        session.pop('user')
+    return render_template("display.html", header="Successully logged out")
+
+@app.route('/signup', methods=["GET", "POST"])
+def signup():
+    '''
+    v is just for troubleshooting
+    '''
+    form=SignUpForm()
+    if request.method == "GET":
+        return render_template("signup.html", form=form, v=1)
+    elif request.method == "POST":
+        if form.validate_on_submit():
+            db = DB(db_conn)
+            print("form submitted and valid, adding to DB")
+            # add user to db
+            added,msg= db.new_user(form)
+            if added:
+                form=LoginForm()
+                return render_template('login.html', message="Successfully Signed Up", form=form)
+                # return redirect(url_for('login', _scheme='https', _external=True))
+                #return  render_template("login.html", message="Successfully Signed Up", v=2)
+            else:
+            # NOT DISPLAYING USER ALREADY EXISTS
+                if msg == 'duplicate':
+                    print("duplicate")
+                    # give uption to rest password 
+                    return render_template("signup.html", message="A account already exists with this email", form=form, duplicate=True, v=3)
+                
+                #PLACEHOLDER FOR TEXTING -> handle differently
+                else:
+                    return render_template("error.html", form=form, v=4)
+        elif form.errors:
+            print(form.errors.items())
+            return  render_template("signup.html", form=form, v=5)
+    return render_template("signup.html", form = form)
+
+
 
 # updated 12/5
 @app.route('/players', methods=["GET", "POST"])
@@ -63,7 +123,7 @@ def players():
 # updated 12/5 - needs delete still
 @app.route('/players/<player_id>', methods=["GET", "PATCH", "DELETE"])
 def player(player_id):
-    '''player information: name, handicapp'''
+    '''player information: name, handicap'''
     db = DB(db_conn)
     if request.method == "GET":
         try:

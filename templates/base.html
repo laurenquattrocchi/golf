@@ -14,9 +14,23 @@
       </head>
     <body>
         <div class="d-flex p-2 justify-content-center" id="header">DELTA SIGMA PHI ANNUAL GOLF OUTING</div>
-        <div id="content">{% block content %}
+        <!-- navbar - show logout if user, otherwise signup/login -->
+        <div id="navbar">
+            <ul style="list-style-type: none;float: right;font-size: large;">
+                <li style="display:inline"><a href="{{url_for('homepage')}}">Home</a></li>
+                {% if 'user' in session %}
+                <li style="display:inline"><a href="{{url_for('logout')}}">Log Out</a></li>
+                {% else %}
+                <li style="display:inline"><a href="{{url_for('signup')}}">Sign Up</a></li>
+                <li style="display:inline"><a href="{{url_for('login')}}">Login</a></li>
+                {% endif%}
+            </ul>
+        </div>
+        <div id="content">
+            {% block content %}
             <p> successfully added {{player}}</p>
-            {% endblock %}</div>
+            {% endblock %}
+        </div>
         <!-- <div id="footer">
             {% block footer %}
             &copy; Copyright 2010 by <a href="http://domain.invalid/">you</a>.
