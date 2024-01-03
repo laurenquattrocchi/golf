@@ -8,8 +8,8 @@ from forms import SignUpForm, LoginForm
 
 # Configure application
 app = Flask(__name__)
-# needed form.csrf_token -> need to hash 
-app.config['SECRET_KEY'] = 'dfewfew123213rwdsgert34tgfd1234trgf'
+# needed form.csrf_token
+app.config.from_pyfile('config.py') 
 
 # update to pull from app
 outing = 1
@@ -17,8 +17,7 @@ outing = 1
 #DB connection
 db_conn = psycopg2.connect(
     dbname="postgres",
-    user="postgres")#, 
-    #password="jzYezhkUW3UUXn")
+    user="postgres")
 
 # default path
 @app.route('/')

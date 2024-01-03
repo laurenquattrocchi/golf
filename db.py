@@ -4,6 +4,7 @@ import psycopg2
 import util
 import psycopg2.extras
 import psycopg2.errors
+import bcrypt
 
 class DB:
     # copied from DB project --> set up
@@ -35,14 +36,22 @@ class DB:
         output (boolean): True if email and pswd valid, False otherwiser
 
         '''
+        ## NEED TO HANDLE EMAIL NOT EXISTING
         c = self.conn.cursor()
         query = '''select password from user_ where email=(%s)'''
         c.execute(query, (form.email.data,))
         #pswd = c.fetchall()
         pswd = c.fetchone()
-        print(pswd)
-        ### NEED TO HANDLE HASHING PASSWORD 
-        if pswd[0] == form.password.data:
+        pswd_bytes = pswd[0].encode('utf-8') 
+        ### NEED TO HANDLE HASHING PASSWORD
+        # encoding user password 
+        userBytes = form.password.data.encode('utf-8') 
+        print(userBytes, pswd_bytes, type(pswd_bytes))
+        # checking password 
+        result = bcrypt.checkpw(userBytes, pswd_bytes) 
+         
+        # if pswd[0] == form.password.data:
+        if result:
             return True, 4
         else:
             return False, 7
@@ -69,9 +78,11 @@ class DB:
             self.conn.rollback()
             return (False, e)
         
+        hash = util.hash_pswd(form.password.data)
+
         # HASH PASSWORD BEFORE STORING
         try:
-            c.execute(insert_user, (player_id, form.email.data, "placeholder", form.password.data))
+            c.execute(insert_user, (player_id, form.email.data, "placeholder", hash))
             user_id = c.fetchone()[0]
         except psycopg2.errors.UniqueViolation as e:
             self.conn.rollback()

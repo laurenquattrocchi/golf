@@ -1,3 +1,22 @@
+import bcrypt
+
+def hash_pswd(pswd):
+    '''
+    https://www.geeksforgeeks.org/hashing-passwords-in-python-with-bcrypt/
+    '''
+
+    # converting password to array of bytes 
+    bytes = pswd.encode('utf-8') 
+    # generating the salt 
+    salt = bcrypt.gensalt() 
+    # Hashing the password 
+    hashed_pswd = bcrypt.hashpw(bytes, salt) 
+
+    # decode the hash to prevent is encoded twice (https://stackoverflow.com/questions/34548846/flask-bcrypt-valueerror-invalid-salt)
+    return hashed_pswd.decode('utf8')
+    
+
+
 def h_adjusted_score(holes:list, scores:list, p_handicapp:int, num_played=18)->list:
     '''
     adjusts scores for handicapp, lower handicapp of hole, hard the hole is
